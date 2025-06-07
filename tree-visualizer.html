@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Binary Search Tree Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        canvas {
+            border: 1px solid #333;
+            background-color: #fff;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        input {
+            padding: 10px;
+            margin: 5px;
+            width: 150px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>Binary Search Tree Visualizer</h1>
+    <input type="number" id="valueInput" placeholder="Enter a number" />
+    <button onclick="insert()">Insert</button>
+    <button onclick="deleteNode()">Delete</button>
+    <button onclick="search()">Search</button>
+    <button onclick="exitProgram()">Exit</button>
+    <canvas id="bstCanvas" width="800" height="600"></canvas>
+
+    <script>
+        class TreeNode {
+            constructor(value) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+            }
+        }
+
+        class BinarySearchTree {
+            constructor() {
+                this.root = null;
+            }
+
+            insert(value) {
+                const newNode = new TreeNode(value);
+                if (!this.root) {
+                    this.root = newNode;
+                    return;
+                }
+                this._insertNode(this.root, newNode);
+            }
+
+            _insertNode(node, newNode) {
+                if (newNode.value < node.value) {
+                    if (!node.left) {
+                        node.left = newNode;
+                    } else {
+                        this._insertNode(node.left, newNode);
+                    }
+                } else {
+                    if (!node.right) {
+                        node.right = newNode;
+                    } else {
+                        this._insertNode(node.right, newNode);
+                    }
+                }
+            }
+
+            delete(value) {
+                const foundNode = this.search(value);
+                if (!foundNode) {
+                    return null; // Not found
+                }
+                this.root = this._deleteNode(this.root, value);
+                return foundNode; // Return the found node
+            }
+
+            _deleteNode(node, value) {
+                if (!node) return null;
+                if (value < node.value) {
+                    node.left = this._deleteNode(node.left, value);
+                } else if (value > node.value) {
+                    node.right = this._deleteNode(node.right, value);
+                } else {
+                    if (!node.left) return node.right;
+                    if (!node.right) return node.left;
+
+                    node.value = this._minValueNode(node.right).value;
+                    node.right = this._deleteNode(node.right, node.value);
+                }
+                return node;
+            }
+
+            _minValueNode(node) {
+                while (node.left) {
+                    node = node.left;
+                }
+                return node;
+            }
+
+            search(value) {
+                return this._searchNode(this.root, value);
+            }
+
+            _searchNode(node, value) {
+                if (!node || node.value === value) return node;
+                return value < node.value ? this._searchNode(node.left, value) : this._searchNode(node.right, value);
+            }
+
+            draw(ctx, highlightValue = null) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                this._drawNode(ctx, this.root, ctx.canvas.width / 2, 40, 100, highlightValue);
+            }
+
+            _drawNode(ctx, node, x, y, offset, highlightValue) {
+                if (node) {
+                    if (node.left) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x - offset, y + 50);
+                        this._draw3DLine(ctx, x, y, x - offset, y + 50);
+                        this._drawNode(ctx, node.left, x - offset, y + 50, offset / 2, highlightValue);
+                    }
+                    if (node.right) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + offset, y + 50);
+                        this._draw3DLine(ctx, x, y, x + offset, y + 50);
+                        this._drawNode(ctx, node.right, x + offset, y + 50, offset / 2, highlightValue);
+                    }
+
+                    // Draw rounded rectangle for the node
+                    ctx.fillStyle = (node.value === highlightValue) ? '#90EE90' : (highlightValue !== null && node.value !== highlightValue) ? '#FF6347' : '#ADD8E6';
+                    this._drawRoundedRect(ctx, x - 20, y - 20, 40, 40);
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(node.value, x, y);
+                }
+            }
+
+            _drawRoundedRect(ctx, x, y, width, height) {
+                const radius = 10;
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            _draw3DLine(ctx, x1, y1, x2, y2) {
+                ctx.strokeStyle = '#7FB3D5';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(x1 + 2, y1 + 2);
+                ctx.lineTo(x2 + 2, y2 + 2);
+                ctx.stroke();
+                ctx.strokeStyle = '#ADD8E6';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }
+        }
+
+        const bst = new BinarySearchTree();
+        const canvas = document.getElementById('bstCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function insert() {
+            const value = parseInt(document.getElementById('valueInput').value);
+            if (!isNaN(value)) {
+                bst.insert(value);
+                bst.draw(ctx);
+                document.getElementById('valueInput').value = '';
+            }
+        }
+
+        function deleteNode() {
+            const value = parseInt(document.getElementById('valueInput').value);
+            if (!isNaN(value)) {
+                const foundNode = bst.delete(value);
+                if (!foundNode) {
+                    alert(`Value ${value} not found in the tree.`);
+                }
+                bst.draw(ctx);
+                document.getElementById('valueInput').value = '';
+            }
+        }
+
+        async function search() {
+            const value = parseInt(document.getElementById('valueInput').value);
+            if (isNaN(value)) return;
+
+            let currentNode = bst.root;
+            let found = false;
+
+            while (currentNode) {
+                bst.draw(ctx, currentNode.value);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Wait for 0.5 seconds
+
+                if (currentNode.value === value) {
+                    found = true;
+                    break;
+                } else {
+                    currentNode = (value < currentNode.value) ? currentNode.left : currentNode.right;
+                }
+            }
+
+            // Final highlight
+            if (found) {
+                bst.draw(ctx, value); // Highlight found node
+            } else {
+                alert(`Value ${value} not found in the tree.`);
+                bst.draw(ctx); // Clear highlights
+            }
+        }
+
+        function exitProgram() {
+            window.close();
+        }
+    </script>
+</body>
+</html>
+
